@@ -1,0 +1,21 @@
+{
+  "name": "@free/open-photo",
+  "version": "1.0.0",
+  "description": "这是一个打开图片的功能，可以平移、放大、缩小、双指旋转、双击放大、以及一些图片相关的工具类。",
+  "keywords": [
+    "photo",
+    "image",
+    "open-photo",
+    "camera"
+  ],
+  "main": "Index.ets",
+  "author": {
+    "name": "余邦锦",
+    "email": "15179861454@163.com"
+  },
+  "homepage": "https://gitee.com/harmony-free/open-photo",
+  "repository": "https://gitee.com/harmony-free/open-photo",
+  "license": "MIT",
+  "modelVersion": "5.0.0",
+  "dependencies": {}
+}
