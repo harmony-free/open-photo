@@ -2,9 +2,9 @@ import photoAccessHelper from '@ohos.file.photoAccessHelper';
 import dataSharePredicates from '@ohos.data.dataSharePredicates';
 import { image } from '@kit.ImageKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { fileIo } from '@kit.CoreFileKit';
-import { abilityAccessCtrl, PermissionRequestResult, Permissions } from '@kit.AbilityKit';
+import { abilityAccessCtrl, common, PermissionRequestResult, Permissions } from '@kit.AbilityKit';
 import { promptAction } from '@kit.ArkUI';
+import { camera, cameraPicker } from '@kit.CameraKit';
 
 class MediaHandler implements photoAccessHelper.MediaAssetDataHandler<image.ImageSource> {
   constructor(onData: (data: image.ImageSource) => void) {
@@ -20,12 +20,6 @@ class MediaHandler implements photoAccessHelper.MediaAssetDataHandler<image.Imag
     }
     this.onData(data)
     console.info('on image data prepared');
-  }
-}
-
-export class PhotoUtils {
-  static copyUri(uri: string, name = "/test.png"): string {
-    return new PhotoManage().copyUri(uri, name)
   }
 }
 
@@ -75,16 +69,8 @@ export class PhotoManage extends PhotoBase implements PhotoFace {
     photoAccessHelper.MediaAssetManager.requestImage(this.context, asset, this.requestOptions, handler)
   }
 
-  copyUri(uri: string, name = "/test.png"): string {
-    let f = fileIo.openSync(uri, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
-    let filePath = this.pathDir + name;
-    fileIo.copyFileSync(f.fd, filePath, 0)
-    return filePath
-  }
-
   constructor(fetchColumns: string[] = []) {
     super()
-
     this.options.fetchColumns = fetchColumns
     this.fetchResult = this.photoHelper.getAssets(this.options)
   }
@@ -189,13 +175,19 @@ export class PhotoManage extends PhotoBase implements PhotoFace {
   }
 }
 
-class PhotoPicker {
+/**
+ * 打开系统相机或相册
+ */
+export class CameraPhoto {
   photoPicker = new photoAccessHelper.PhotoViewPicker();
   photoUris: Array<string> = []
 
-  open(options: photoAccessHelper.PhotoSelectOptions = {
-    maxSelectNumber:50,
-    preselectedUris:this.photoUris
+  /**
+   * 打开系统相册
+   */
+  photo(options: photoAccessHelper.PhotoSelectOptions = {
+    maxSelectNumber: 50,
+    preselectedUris: this.photoUris
   } as photoAccessHelper.PhotoSelectOptions): Promise<Array<string>> {
     options.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE;
     return new Promise<Array<string>>((res, rej) => {
@@ -219,5 +211,35 @@ class PhotoPicker {
     })
 
   }
+
+  /**
+   * 打开系统相机
+   */
+  camera(mContext: common.Context): Promise<string> {
+    return new Promise<string>((res, rej) => {
+      try {
+        let profile: cameraPicker.PickerProfile = {
+          cameraPosition: camera.CameraPosition.CAMERA_POSITION_BACK
+        };
+        cameraPicker.pick(mContext, [cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO], profile)
+          .then((result) => {
+            if (result.resultCode == 0) {
+              res(result.resultUri)
+            } else {
+              rej(new Error('clean cameraPicker'))
+            }
+          })
+          .catch((err: BusinessError) => {
+            rej(err)
+            console.error(`Invoke photoViewPicker.select failed, code is ${err.code}, message is ${err.message}`);
+          });
+      } catch (error) {
+        let err = error as BusinessError;
+        rej(err)
+        console.error(`the pick call failed. error code: ${err.code}`);
+      }
+    })
+  }
 }
+
 

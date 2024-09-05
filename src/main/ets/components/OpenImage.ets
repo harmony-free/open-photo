@@ -1,148 +1,223 @@
-import { image } from '@kit.ImageKit';
-import { http } from '@kit.NetworkKit';
-import { display, matrix4, router } from '@kit.ArkUI';
-import { Vec2 } from '@kit.ArkGraphics3D';
+import { matrix4, router } from '@kit.ArkUI'
+import { image } from '@kit.ImageKit'
+import { Vec2 } from '@kit.ArkGraphics3D'
+import { fileIo } from '@kit.CoreFileKit'
+import { NavBar } from '@free/global'
+import { ImageTools } from '../photo/ImageTools'
 
-import { PhotoUtils } from './PhotoManage';
-
-export enum OpenImageType {
-  uri,
-  src,
-  url,
-}
-
-export interface OpenImageQueryFace {
-  src: string
-  type: OpenImageType
-}
-
-class HttpUtil {
-  async download(url: string): Promise<ArrayBuffer> {
-    return new Promise<ArrayBuffer>((res, rej) => {
-      http.createHttp().request(url).then((resp) => {
-        res(resp.result as ArrayBuffer)
-      })
-    })
-  }
-}
-
-
-@Entry({ routeName: 'photoManage/OpenImage' })
+@Entry
 @Component
-struct OpenImage {
-  private query: OpenImageQueryFace = router.getParams() as OpenImageQueryFace
-  private path = PhotoUtils.copyUri(this.query.src)
-  private imageSource: image.ImageSource = image.createImageSource(this.path)
-  private imageSize: Size = { width: 0, height: 0 }
-  private scaleRadius: number = 1.0
-  private pixels: number = 1.0
+export struct OpenImage {
+  private params: object = router.getParams()
+  private src: string = this.params['src'] as string
+  private imageSource: image.ImageSource = image.createImageSource(new ArrayBuffer(96))
+  private imageSize: image.Size = { width: 4, height: 6 }
+  private ratio: number = 1.0
   private offsetV: Vec2 = { x: 0, y: 0 }
-  private oldMatrix: matrix4.Matrix4Transit = matrix4.identity()
-  @State pixelMap: image.PixelMap = this.imageSource.createPixelMapSync()
-  @State aspect: number = 1.0
-  @State matrix: matrix4.Matrix4Transit = matrix4.identity()
+  private oldMatrix: matrix4.Matrix4Transit = matrix4.identity().copy();
+  @State aspect: number = this.imageSize.width / this.imageSize.height
+  @State matrix: matrix4.Matrix4Transit = matrix4.identity().copy();
+  @State pixelMap: image.PixelMap = this.imageSource.createPixelMapSync({ editable: true })
+  @State angle: number = 0.0
+  @State isWidth: boolean = true
+  @State sizeWidth: Length = '100%'
+  @State sizeHeight: Length = '100%'
+
+  copyUri(uri: string): string {
+    let url = getContext().cacheDir + "/" + "pixel_map.png";
+    let f = fileIo.openSync(uri, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
+    fileIo.copyFileSync(f.fd, url)
+    return url
+  }
+
+  @Builder
+  rightBuilder() {
+    Image($r('sys.symbol.delete_left'))
+  }
+
+  set(index: number, value: number) {
+    this.matrix['matrix4x4'][index] = value
+  }
+
+  get(index: number): number {
+    return this.matrix['matrix4x4'][index]
+  }
+
+  getLocal(index: number): number {
+    return this.matrix['matrix4x4'][index] / this.ratio / 4
+  }
+
+  setReset(event: GestureEvent) {
+    if (this.ratio < 1) {
+      this.matrix = matrix4.identity().copy()
+      this.offsetV.x = 0
+      this.offsetV.y = 0
+      this.ratio = 1
+      return
+    } else if (this.ratio >= 5) {
+      this.ratio = 5
+    }
+    let offX = this.get(12)
+    let offY = this.get(13)
+    let wid = event.target.area.width as number
+    let hei = event.target.area.height as number
+    wid = wid / 2 * (this.ratio - 1) * 3.25
+    hei = hei / 2 * (this.ratio - 1) * 3.25
+    if (offX >= wid) {
+      this.set(12, wid)
+      this.offsetV.x = wid
+    }
+    if (offY >= hei) {
+      this.set(13, hei)
+      this.offsetV.y = hei
+    }
+    if (offX <= -wid) {
+      this.set(12, -wid)
+      this.offsetV.x = -wid
+    }
+    if (offY <= -hei) {
+      this.set(13, -hei)
+      this.offsetV.y = -hei
+    }
+    this.matrix = this.matrix.copy()
+
+  }
 
   aboutToAppear(): void {
-    this.pixels = display.getDefaultDisplaySync().densityPixels
-    this.setImageSource()
+    new ImageTools().read(this.src).then((file) => {
+      this.imageSource = image.createImageSource(this.src)
+      this.pixelMap = this.imageSource.createPixelMapSync();
+      this.imageSize = this.imageSource.getImageInfoSync().size
+      this.aspect = this.imageSize.width / this.imageSize.height
+    })
   }
 
-  async setImageSource() {
-    if (this.query.type == OpenImageType.uri) {
-      let path = PhotoUtils.copyUri(this.query.src)
-      this.imageSource = image.createImageSource(path)
-    } else if (this.query.type == OpenImageType.url) {
-      await this.setUrl(this.query.src as string)
-    } else if (this.query.type == OpenImageType.src) {
-      this.imageSource = image.createImageSource(this.query.src as string)
-    }
-    this.setInfo()
-  }
-
-  async setUrl(url: string) {
-    let buf = await new HttpUtil().download(url)
-    this.imageSource = image.createImageSource(buf)
-  }
-
-  setInfo() {
-    this.pixelMap = this.imageSource!.createPixelMapSync()
-    this.imageSize = this.imageSource!.getImageInfoSync().size
-    this.aspect = this.imageSize.width / this.imageSize.height
+  onPageShow(): void {
+    // console.log(this.src)
   }
 
   build() {
-    Row() {
-      Column() {
-        Image(this.pixelMap)
-          .width('100%')
-          .aspectRatio(this.aspect)
-          .transform(this.matrix)
-          .objectFit(ImageFit.Cover)
-          .autoResize(false)
-          .gesture(
-            GestureGroup(GestureMode.Exclusive,
-              PinchGesture({ fingers: 2 })
-                .onActionStart(() => {
-                  this.oldMatrix = this.matrix.copy()
+    Stack() {
+      Image(this.pixelMap)
+        .width("100%")
+        .aspectRatio(this.aspect)
+        .objectFit(ImageFit.Fill)
+        .draggable(false)
+        .transform(this.matrix)
+        .autoResize(false)
+        .gesture(
+          GestureGroup(GestureMode.Exclusive,
+            PinchGesture({ fingers: 2 })
+              .onActionStart(() => {
+                this.oldMatrix = this.matrix.copy()
+              })
+              .onActionUpdate((event: GestureEvent) => {
+                let cenX = event.target.area.width as number / 2
+                let cenY = event.target.area.height as number / 2
+                let offX = event.pinchCenterX - cenX + this.offsetV.x
+                let offY = event.pinchCenterY - cenY + this.offsetV.y
+                let old = this.oldMatrix.copy()
+                let maxRatio = this.ratio * event.scale
+                if (maxRatio > 5) {
+                  event.scale = 5 / this.ratio
+                }
+                old.scale({
+                  x: event.scale,
+                  y: event.scale,
+                  centerX: offX * 3.25,
+                  centerY: offY * 3.25,
                 })
-                .onActionUpdate((event) => {
-                  this.oldMatrix.copy()
-                  let wid = event.target.area.width as number / 2
-                  let hei = event.target.area.height as number / 2
-                  let cenX = wid - event.pinchCenterX + this.offsetV.x
-                  let cenY = hei - event.pinchCenterY + this.offsetV.y
+                this.matrix = old
+              })
+              .onActionEnd((event: GestureEvent) => {
+                this.ratio = this.ratio * event.scale
+                this.setReset(event)
+              }),
+            LongPressGesture({ repeat: true })
+              .onAction((event: GestureEvent) => {
+                if (event.repeat) {
+                  console.log("LongPressGesture.start")
+                }
+              }),
+            TapGesture({ count: 2 })
+              .onAction((event: TapGestureEvent) => {
+                let cenX = event.target.area.width as number / 2
+                let cenY = event.target.area.height as number / 2
+                let offX = event.fingerList[0].localX - cenX + this.offsetV.x
+                let offY = event.fingerList[0].localY - cenY + this.offsetV.y
+                if (this.ratio == 1) {
+                  this.ratio = 2
                   this.matrix.scale({
-                    x: this.scaleRadius,
-                    y: this.scaleRadius,
-                    centerX: cenX * this.pixels,
-                    centerY: cenY * this.pixels
+                    x: this.ratio,
+                    y: this.ratio,
+                    centerX: offX * 3.25,
+                    centerY: offY * 3.25,
                   })
-                }),
-              LongPressGesture({ repeat: true })
-                .onAction((event: GestureEvent) => {
+                } else {
+                  this.matrix = matrix4.identity().copy()
+                  this.offsetV.x = 0
+                  this.offsetV.y = 0
+                  this.ratio = 1
+                }
+              }),
+            TapGesture({ count: 1, fingers: 1 })
+              .onAction(() => {
+                console.log("TapGesture1")
+              }),
+            PanGesture({ fingers: 1 })
+              .onActionStart(() => {
+                this.offsetV.x = 0
+                this.offsetV.y = 0
+              })
+              .onActionUpdate((event: GestureEvent) => {
+                let offX = event.offsetX - this.offsetV.x
+                let offY = event.offsetY - this.offsetV.y
+                console.log(`${this.angle}--${event.offsetX}:${event.offsetY}`)
+                this.matrix.translate({ x: offX * this.ratio * 3.25, y: offY * this.ratio * 3.25 })
+                this.offsetV.x = event.offsetX
+                this.offsetV.y = event.offsetY
+              }).onActionEnd((event) => {
+              this.setReset(event)
 
-                }),
-              TapGesture({ count: 2, fingers: 1 })
-                .onAction((event) => {
-                  let wid = event.target.area.width as number / 2
-                  let hei = event.target.area.height as number / 2
-                  let cenX = wid - event.fingerList[0].localX + this.offsetV.x
-                  let cenY = hei - event.fingerList[0].localY + this.offsetV.y
-                  if (this.scaleRadius == 1) {
-                    this.matrix.scale({
-                      x: this.scaleRadius,
-                      y: this.scaleRadius,
-                      centerX: cenX * this.pixels,
-                      centerY: cenY * this.pixels
-                    })
-                    this.scaleRadius = 2
+            }),
+
+            RotationGesture({ fingers: 2 })
+              .onActionStart((event: GestureEvent | undefined) => {
+                this.oldMatrix = this.matrix.copy()
+                console.info('RotationGesture is onActionStart');
+              })// 当旋转手势生效时，通过旋转手势的回调函数获取旋转角度，从而修改组件的旋转角度
+              .onActionUpdate((event: GestureEvent) => {
+                let matrix = this.oldMatrix.copy()
+                matrix.rotate({
+                  angle: event.angle,
+                  z: 1,
+                })
+                this.matrix = matrix
+              })// 当旋转结束抬手时，固定组件在旋转结束时的角度
+              .onActionEnd((event) => {
+                this.matrix.rotate({
+                  angle: -event.angle,
+                  z: 1,
+                })
+                let angle = event.angle % 90
+                if (angle > 45) {
+                  angle = 90 - angle
+                  this.angle += 90
+                  this.isWidth = !this.isWidth
+                  if (this.isWidth) {
+                    this.aspect = this.imageSize.width / this.imageSize.height
                   } else {
-                    this.matrix = matrix4.identity()
-                    this.scaleRadius = 1
-                    this.offsetV = { x: 0, y: 0 }
+                    this.aspect = this.imageSize.height / this.imageSize.width
                   }
-                }),
-              PanGesture({ fingers: 1 })
-                .onActionStart(() => {
-                  this.offsetV = { x: 0, y: 0 }
-                })
-                .onActionUpdate((event) => {
-                  this.matrix.translate({ x: event.offsetX - this.offsetV.x, y: event.offsetY - this.offsetV.y })
-                  this.offsetV = { x: event.offsetX, y: event.offsetY }
-                }),
-              RotationGesture({ fingers: 2 })
-                .onActionUpdate(() => {
+                  this.pixelMap = this.imageSource.createPixelMapSync({ rotate: this.angle % 360 })
+                } else {
+                  angle = -angle
+                }
 
-                })
-                .onActionEnd(() => {
-
-
-                })
-            )
+              })
           )
-      }
-      .width('100%')
-    }
-    .height('100%')
+        )
+      NavBar({ backColor: 0x60EEEEEE }).position({ x: 0, y: 0 })
+    }.width('100%').height('100%').backgroundColor(Color.Black)
   }
 }
