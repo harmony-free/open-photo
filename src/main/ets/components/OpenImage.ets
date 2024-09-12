@@ -1,15 +1,20 @@
-import { matrix4, router } from '@kit.ArkUI'
+import { matrix4 } from '@kit.ArkUI'
 import { image } from '@kit.ImageKit'
 import { Vec2 } from '@kit.ArkGraphics3D'
-import { fileIo } from '@kit.CoreFileKit'
 import { NavBar } from '@free/global'
 import { ImageTools } from '../photo/ImageTools'
+
+@Builder
+export function OpenImageBuilder(o: object) {
+  NavDestination() {
+    OpenImage({ src: o['src'] })
+  }.hideTitleBar(true)
+}
 
 @Entry
 @Component
 export struct OpenImage {
-  private params: object = router.getParams()
-  private src: string = this.params['src'] as string
+  private src: string = ""
   private imageSource: image.ImageSource = image.createImageSource(new ArrayBuffer(96))
   private imageSize: image.Size = { width: 4, height: 6 }
   private ratio: number = 1.0
@@ -22,13 +27,6 @@ export struct OpenImage {
   @State isWidth: boolean = true
   @State sizeWidth: Length = '100%'
   @State sizeHeight: Length = '100%'
-
-  copyUri(uri: string): string {
-    let url = getContext().cacheDir + "/" + "pixel_map.png";
-    let f = fileIo.openSync(uri, fileIo.OpenMode.CREATE | fileIo.OpenMode.READ_WRITE)
-    fileIo.copyFileSync(f.fd, url)
-    return url
-  }
 
   @Builder
   rightBuilder() {
@@ -90,10 +88,6 @@ export struct OpenImage {
       this.imageSize = this.imageSource.getImageInfoSync().size
       this.aspect = this.imageSize.width / this.imageSize.height
     })
-  }
-
-  onPageShow(): void {
-    // console.log(this.src)
   }
 
   build() {
@@ -162,7 +156,7 @@ export struct OpenImage {
               }),
             TapGesture({ count: 1, fingers: 1 })
               .onAction(() => {
-                console.log("TapGesture1")
+
               }),
             PanGesture({ fingers: 1 })
               .onActionStart(() => {

@@ -3,6 +3,14 @@
     {
       "name": "page_show",
       "value": "page from package"
+    },
+    {
+      "name": "READ_IMAGEVIDEO",
+      "value": "读取图片和视频权限"
+    },
+    {
+      "name": "WRITE_IMAGEVIDEO",
+      "value": "写入图片和视频权限"
     }
   ]
 }

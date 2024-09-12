@@ -2,7 +2,7 @@
 
 #### 介绍
 
-这是一个打开图片的功能，可以平移、放大、缩小、双指旋转、双击放大、以及一些图片相关的工具类。
+这是一个打开相机、相册、图片的功能，可以平移、放大、缩小、双指旋转、双击放大、以及一些图片相关的工具类。
 
 #### 软件架构
 
@@ -14,15 +14,25 @@ ohpm install @free/open-photo
 
 #### 使用说明
 
-1. 相关权限
+相关权限
+
+读取影像:`ohos.permission.READ_IMAGEVIDEO`
+
+修改影像:`ohos.permission.WRITE_IMAGEVIDEO`
+
+1、 打开图片
 
 ```
-读取影像:ohos.permission.READ_IMAGEVIDEO
-修改影像:ohos.permission.WRITE_IMAGEVIDEO
-```
+// 注册路由
+router.requestBuilder("openImage", wrapBuilder(OpenImageBuilder))
 
-2. xxxx
-3. xxxx
+// 跳转页面 navgation
+router.push('openImage', new Object({ src: "" }))
+
+// 跳转页面 router
+router.push('openImage', new Object({ src: "" }))
+
+```
 
 #### 参与贡献
 

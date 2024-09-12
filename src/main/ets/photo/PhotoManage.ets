@@ -2,9 +2,9 @@ import photoAccessHelper from '@ohos.file.photoAccessHelper';
 import dataSharePredicates from '@ohos.data.dataSharePredicates';
 import { image } from '@kit.ImageKit';
 import { BusinessError } from '@kit.BasicServicesKit';
-import { abilityAccessCtrl, common, PermissionRequestResult, Permissions } from '@kit.AbilityKit';
-import { promptAction } from '@kit.ArkUI';
+import { common } from '@kit.AbilityKit';
 import { camera, cameraPicker } from '@kit.CameraKit';
+import { global } from '@free/global';
 
 class MediaHandler implements photoAccessHelper.MediaAssetDataHandler<image.ImageSource> {
   constructor(onData: (data: image.ImageSource) => void) {
@@ -73,57 +73,17 @@ export class PhotoManage extends PhotoBase implements PhotoFace {
     super()
     this.options.fetchColumns = fetchColumns
     this.fetchResult = this.photoHelper.getAssets(this.options)
+    this.requestAssets()
   }
 
   async requestAssets(): Promise<photoAccessHelper.FetchResult<photoAccessHelper.PhotoAsset>> {
     if (this.requestRead) {
-      await this.requestPermissions('ohos.permission.READ_IMAGEVIDEO')
+      await global.requestPermissions('ohos.permission.READ_IMAGEVIDEO', 'ohos.permission.WRITE_IMAGEVIDEO')
+      this.fetchResult = this.photoHelper.getAssets(this.options)
     }
-    return this.photoHelper.getAssets(this.options)
+    return this.fetchResult
   }
 
-
-  requestPermissions(...permissions: Array<Permissions>): Promise<boolean> {
-    return new Promise<boolean>((res, rej) => {
-      abilityAccessCtrl.createAtManager()
-        .requestPermissionsFromUser(getContext(this), permissions).then(async (v: PermissionRequestResult) => {
-        let isPermission: boolean = true
-        for (let index = 0; index < v.permissions.length; index++) {
-          let permission = v.permissions[index] as Permissions
-          let authResult = v.authResults[index]
-          if (authResult == 0) {
-            if (permission == 'ohos.permission.READ_IMAGEVIDEO') {
-              this.requestRead = true
-            }
-            if (permission == 'ohos.permission.WRITE_IMAGEVIDEO') {
-              this.requestWrite = true
-            }
-          } else if (authResult == 1) {
-            let i = permissions.indexOf(permission)
-            if (i != -1) {
-              isPermission = false
-            }
-            promptAction.showDialog({
-              title: "前往设置",
-              message: "该权限已被禁止，请前往系统设置开启。",
-              buttons: [
-                { text: "暂不", color: '#000000' },
-                { text: "去设置", color: '#0000FF' }
-              ]
-            })
-            res(isPermission)
-            return
-          } else if (authResult == 2) {
-            let i = permissions.indexOf(permission)
-            if (i != -1) {
-              isPermission = await this.requestPermissions(permissions[i])
-            }
-          }
-        }
-        res(isPermission)
-      })
-    })
-  }
 
   async init(): Promise<photoAccessHelper.PhotoAsset[]> {
     return new Promise<photoAccessHelper.PhotoAsset[]>((res, rej) => {
@@ -179,22 +139,18 @@ export class PhotoManage extends PhotoBase implements PhotoFace {
  * 打开系统相机或相册
  */
 export class CameraPhoto {
-  photoPicker = new photoAccessHelper.PhotoViewPicker();
-  photoUris: Array<string> = []
-
   /**
    * 打开系统相册
    */
   photo(options: photoAccessHelper.PhotoSelectOptions = {
     maxSelectNumber: 50,
-    preselectedUris: this.photoUris
+    preselectedUris: []
   } as photoAccessHelper.PhotoSelectOptions): Promise<Array<string>> {
     options.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE;
     return new Promise<Array<string>>((res, rej) => {
       try {
-        this.photoPicker.select(options)
+        new photoAccessHelper.PhotoViewPicker().select(options)
           .then((photoSelectResult: photoAccessHelper.PhotoSelectResult) => {
-            this.photoUris = photoSelectResult.photoUris
             res(photoSelectResult.photoUris)
             console.info('PhotoViewPicker.select successfully, PhotoSelectResult uri: ' +
             JSON.stringify(photoSelectResult))
