@@ -3,7 +3,6 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { fileIo, ReadOptions } from '@kit.CoreFileKit';
 import { util } from '@kit.ArkTS';
 import { http } from '@kit.NetworkKit';
-import { promptAction } from '@kit.ArkUI';
 
 export type ImageType = fileIo.File | string | ArrayBuffer;
 
@@ -21,6 +20,9 @@ export class ImageTools {
     this.file = this.createFile(name)
   }
 
+  getPath(): string {
+    return this.dir + this.name
+  }
 
   createFile(name: string = this.name): fileIo.File {
     const path: string = this.dir + name;
@@ -96,7 +98,7 @@ export class ImageTools {
           this.setBuffer(data.result)
           res(this.file)
         } else {
-          rej(new Error(`文件下载失败:<${url}>文件`))
+          rej(new Error(`文件下载失败:"${url}"文件`))
         }
       }).catch((err: Error) => {
         rej(err)
@@ -134,7 +136,7 @@ export class ImageTools {
           this.decodeBase64(this.setBase64Header(src))
           res(this.file)
         } else {
-          rej(new Error(`暂不支持打开:<${src}>文件`))
+          rej(new Error(`暂不支持打开:"${src}"文件`))
         }
       } else if (src instanceof ArrayBuffer) {
         this.setBuffer(src)
@@ -154,7 +156,6 @@ export class ImageTools {
         packer.release()
         if (err) {
           rej(err)
-          promptAction.showToast({ message: `压缩图片错误：${err.code}！${err.message}` })
         } else {
           console.log(data.byteLength.toString())
           if (mb != undefined && data.byteLength >= 1024 * 1024 * mb) {

@@ -15,6 +15,9 @@
       {
         "name": "ohos.permission.WRITE_IMAGEVIDEO",
         "reason": "$string:WRITE_IMAGEVIDEO"
+      },
+      {
+        "name": "ohos.permission.INTERNET"
       }
     ]
   }
