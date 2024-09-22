@@ -6,6 +6,19 @@
 
 #### 软件架构
 
+| 主要功能 | 模块     | 介绍                                 |
+|------|--------|------------------------------------|
+| 打开相机 | alert  | `Dialog.alert("alert")`            | 
+| 打开相册 | open   | `Dialog.open({data:"open"})`       | 
+| 打开图片 | sheet  | `Dialog.sheet({data:['sheet']})`   | 
+| 平移   | picker | `Dialog.picker({data:['picker']})` | 
+| 放大   | tel    | `Dialog.tel("168********")`        | 
+| 缩小   | custom | `Dialog.custom(wrap, params)`      | 
+| 双指旋转 | custom | `Dialog.custom(wrap, params)`      | 
+| 双击放大 | custom | `Dialog.custom(wrap, params)`      | 
+| 翻转   | custom | `Dialog.custom(wrap, params)`      | 
+| 剪切   | custom | `Dialog.custom(wrap, params)`      | 
+
 #### 安装教程
 
 ```
@@ -14,7 +27,7 @@ ohpm install @free/open-photo
 
 #### 使用说明
 
-相关权限
+相关权限: 该权限需要申请开通
 
 读取影像:`ohos.permission.READ_IMAGEVIDEO`
 

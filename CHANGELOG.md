@@ -1,25 +1,23 @@
-### 1.0.1 修改参数默认配置
-
-修改了默认配置
-
-LoadingDialog.show({state:LoadingState.loading} as LoadingParam)
-
-==> 讲不用转化传参类型
-
-LoadingDialog.show({state:LoadingState.loading})
-
 ### 1.0.0 初始发布
 
 六种功能
 
-1、loading:加载。
+这是一个打开相机、相册、图片的功能，可以平移、放大、缩小、双指旋转、双击放大、以及一些图片相关的工具类。
 
-2、success:成功。
+1、打开相机。
 
-3、failure:失败。
+2、打开相册。
 
-4、info:信息。
+3、打开图片。
 
-5、warn:警告。
+4、平移。
 
-6、progress:下载进度。
+5、放大。
+
+6、缩小。
+
+7、双指旋转。
+
+8、双击放大。
+
+9、图片工具

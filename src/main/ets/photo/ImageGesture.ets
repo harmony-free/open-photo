@@ -1,6 +1,5 @@
 import { ImageBase } from './ImageBase'
 import { matrix4 } from '@kit.ArkUI'
-import { image } from '@kit.ImageKit'
 
 interface PinchGestureFace {
   onPinchStart(event: GestureEvent): void
@@ -72,7 +71,7 @@ export class ImageGesture extends ImageBase implements GestureFace {
   }
 
   onTap(event: GestureEvent): void {
-    
+
   }
 
   onDouble(event: GestureEvent): void {
@@ -132,9 +131,9 @@ export class ImageGesture extends ImageBase implements GestureFace {
       angle: -event.angle,
       z: 1,
     })
-    let angle = event.angle % 90
-    if (angle > 45) {
-      angle = 90 - angle
+    // let angle = event.angle % 90
+    if (event.angle > 45) {
+      // angle = 90 - angle
       this.angle += 90
       this.isWidth = !this.isWidth
       if (this.isWidth) {
@@ -144,7 +143,7 @@ export class ImageGesture extends ImageBase implements GestureFace {
       }
       this.pixelMap = this.copy()
     } else {
-      angle = -angle
+      // angle = -angle
     }
     this.matrix = this.matrix.copy()
   }

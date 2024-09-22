@@ -9,13 +9,13 @@ export class ImageBase {
   protected name: string = global.generateUUID()
   protected imageTools: ImageTools = new ImageTools(this.name)
   protected imageSource!: image.ImageSource
-  protected imageSize: image.Size = { width: 4, height: 6 }
+  public imageSize: image.Size = { width: 4, height: 6 }
   protected offsetV: Vec2 = { x: 0, y: 0 }
   protected ratio: number = 1.0
   protected oldMatrix: matrix4.Matrix4Transit = matrix4.identity().copy();
   protected isWidth: boolean = true
   protected angle: number = 0.0
-  @Trace pixelMap: image.PixelMap | undefined
+  @Trace pixelMap!: image.PixelMap
   @Trace aspect: number = this.imageSize.width / this.imageSize.height
   @Trace matrix: matrix4.Matrix4Transit
 
@@ -44,12 +44,6 @@ export class ImageBase {
   }
 
   copy(): image.PixelMap {
-
     return this.imageSource.createPixelMapSync({ rotate: this.angle % 360 })
-  }
-
-  update(buf: ArrayBuffer) {
-    // this.imageTools.read(buf)
-    // this.imageSource.updateData(buf, false, 0, buf.byteLength)
   }
 }

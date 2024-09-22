@@ -18,6 +18,6 @@
   "license": "MIT",
   "modelVersion": "5.0.0",
   "dependencies": {
-    "@free/global": "file:../global"
+    "@free/global": "^1.0.1"
   }
 }
