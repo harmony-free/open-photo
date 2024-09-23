@@ -2,10 +2,14 @@ import { NavBar } from '@free/global'
 import { ImageView } from './ImageView'
 import { ImageUtils } from '../photo/ImageUtils'
 
+export interface OpenImageParams {
+  data: string
+}
+
 @Builder
-export function OpenImageBuilder(o: object) {
+export function OpenImageBuilder(p: object) {
   NavDestination() {
-    OpenImage()
+    OpenImage({ src: (p as OpenImageParams).data })
   }.hideTitleBar(true)
 }
 
@@ -22,8 +26,12 @@ export struct OpenImage {
 
   build() {
     Stack() {
-      ImageView({ src: this.src }).width("50%")
-      NavBar({ backColor: 0x60EEEEEE }).position({ x: 0, y: 0 })
-    }.width('100%').height('100%').backgroundColor(Color.Black)
+      ImageView({ src: this.src }).width("100%")
+      NavBar({
+        backColor: Color.Transparent,
+        textColor: Color.White,
+      }).position({ top: 0 }).backgroundBlurStyle(BlurStyle.Thin,
+        { colorMode: ThemeColorMode.DARK, adaptiveColor: AdaptiveColor.DEFAULT, scale: 1.0 })
+    }.width('100%').height('100%').backgroundColor("#ff323131")
   }
 }

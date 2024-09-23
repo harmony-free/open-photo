@@ -53,6 +53,7 @@ interface PhotoFace {
 }
 
 export class PhotoManage extends PhotoBase implements PhotoFace {
+  cameraPhoto: CameraPhoto = new CameraPhoto()
   photos: photoAccessHelper.PhotoAsset[] = []
   thumbnail: image.PixelMap[] = []
   count: number = 0
@@ -69,37 +70,42 @@ export class PhotoManage extends PhotoBase implements PhotoFace {
     photoAccessHelper.MediaAssetManager.requestImage(this.context, asset, this.requestOptions, handler)
   }
 
-  constructor(fetchColumns: string[] = []) {
-    super()
-    this.options.fetchColumns = fetchColumns
-    this.fetchResult = this.photoHelper.getAssets(this.options)
-    this.requestAssets()
-  }
-
-  async requestAssets(): Promise<photoAccessHelper.FetchResult<photoAccessHelper.PhotoAsset>> {
-    if (this.requestRead) {
-      await global.requestPermissions('ohos.permission.READ_IMAGEVIDEO', 'ohos.permission.WRITE_IMAGEVIDEO')
-      this.fetchResult = this.photoHelper.getAssets(this.options)
+  async requestAssets(): Promise<boolean> {
+    if (!this.requestRead) {
+      let permissionMap =
+        await global.requestPermissions('ohos.permission.READ_IMAGEVIDEO', 'ohos.permission.WRITE_IMAGEVIDEO')
+      this.requestRead = permissionMap.get('ohos.permission.READ_IMAGEVIDEO') ?? false
+      this.requestWrite = permissionMap.get('ohos.permission.WRITE_IMAGEVIDEO') ?? false
+      return this.requestRead
+    } else {
+      return this.requestRead
     }
-    return this.fetchResult
   }
 
 
-  async init(): Promise<photoAccessHelper.PhotoAsset[]> {
+  async readAll(): Promise<photoAccessHelper.PhotoAsset[]> {
+    let req = await this.requestAssets()
     return new Promise<photoAccessHelper.PhotoAsset[]>((res, rej) => {
-      this.fetchResult.then((r) => {
-        this.count = r.getCount()
-        this.isAfterLast = r.isAfterLast()
-        r.getAllObjects().then((ps) => {
-          this.photos = ps
-          console.log(JSON.stringify(ps))
-          res(ps)
-          r.close()
+      if (!req) {
+        rej(new Error("is not read permission"))
+      } else {
+        this.photoHelper.getAssets(this.options).then((r) => {
+          this.count = r.getCount()
+          this.isAfterLast = r.isAfterLast()
+          r.getAllObjects().then((ps) => {
+            this.photos = ps
+            res(ps)
+            r.close()
+          })
+        }).catch((err: Error) => {
+          rej(err)
         })
-      }).catch((err: Error) => {
-        console.log(JSON.stringify(err))
-      })
+      }
     })
+  }
+
+  async thumbnailAll() {
+
   }
 
   createUri(extension: string = 'png'): Promise<string> {

@@ -1,6 +1,7 @@
+import { global, NavBar, router } from '@free/global'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
-import router from '@ohos.router'
 import { PhotoManage } from '../photo/PhotoManage'
+import { OpenImageParams } from './OpenImage'
 
 @Observed
 class ItemModel {
@@ -23,37 +24,53 @@ export interface PhotoPageQuery {
   isOriginal: boolean
 }
 
+@Builder
+export function PhotoPageBuilder(o: object) {
+  NavDestination() {
+    PhotoPage()
+  }.hideTitleBar(true)
+}
+
 
 @Entry({ routeName: 'photoManage/PhotoPage' })
 @Component
 export struct PhotoPage {
-  private query: PhotoPageQuery = router.getParams() as PhotoPageQuery
+  private query: PhotoPageQuery = {
+    isEdit: true,
+    preview: true,
+    isCamera: true,
+  } as PhotoPageQuery
   private pm: PhotoManage = new PhotoManage()
   @State photos: ItemModel[] = []
   @State selectList: ItemModel[] = []
   @State selectCount: number = 0
   @State list: number[] = []
-  @StorageProp('topHeight') top: number = 40
-  @StorageProp('bottomHeight') bottom: number = 0
+  @State isOriginal: boolean = false
 
   aboutToAppear(): void {
+    global.setBarContentColor("#FFFFFF")
+    this.upData()
+  }
 
-    // this.pm.requestPermissions('ohos.permission.READ_IMAGEVIDEO','ohos.permission.WRITE_IMAGEVIDEO')
-
-    if (this.query == undefined) {
-      this.query = {
-        isEdit: true,
-        preview: true,
-      } as PhotoPageQuery
-    }
-    console.log(JSON.stringify(this.query))
-
-    this.pm.init().then((list) => {
+  upData() {
+    this.photos = []
+    this.pm.readAll().then((list) => {
       list.forEach((asset) => {
-        this.photos.push(new ItemModel(asset))
         this.photos.push(new ItemModel(asset))
       })
     })
+  }
+
+  aboutToDisappear(): void {
+    global.setBarContentColor("#000000")
+  }
+
+  byte(): string {
+    let byte = ""
+    this.selectList.forEach((item) => {
+    })
+
+    return byte
   }
 
   build() {
@@ -71,7 +88,9 @@ export struct PhotoPage {
             .textAlign(TextAlign.Center)
             .backgroundColor(0x999999)
           }.onClick(() => {
-            console.log("打开相机拍照")
+            this.pm.cameraPhoto.camera(getContext()).then(() => {
+              this.upData()
+            })
           })
         }
         ForEach(this.photos, (item: ItemModel, index: number) => {
@@ -90,56 +109,81 @@ export struct PhotoPage {
       .columnsTemplate('1fr 1fr 1fr 1fr')
       .columnsGap(2)
       .rowsGap(2)
-      .padding({ top: 84, bottom: 89 })
+      .padding({
+        top: 84,
+        bottom: 89,
+        left: 2,
+        right: 2
+      })
+      .backgroundColor("#ff323131")
 
-      Stack() {
-        Text() {
-          SymbolSpan($r('sys.symbol.xmark'))
+      NavBar({
+        title: "相册",
+        backColor: Color.Transparent,
+        textColor: Color.White,
+      })
+        .position({ top: 0 })
+        .backgroundBlurStyle(BlurStyle.Thin,
+          { colorMode: ThemeColorMode.DARK, adaptiveColor: AdaptiveColor.DEFAULT, scale: 1.0 })
+
+      Row() {
+        if (this.selectCount == 0) {
+          Text('预览')
+            .height(49)
+            .fontColor('#ffa9aba9')
+        } else {
+          Text('预览')
+            .height(49)
+            .fontColor(Color.White)
         }
-        .width(44)
-        .height(44)
-        .fontSize(20)
-        .position({ left: 0, top: 0 })
-        .fontColor(Color.White)
-        .textAlign(TextAlign.Center)
-        .onClick(() => {
-          router.back()
-        })
 
-        Text('相册').height(44).fontColor(Color.White)
+
+        // Text() {
+        //   SymbolSpan(this.isOriginal ? $r('sys.symbol.checkmark_circle_fill') : $r('sys.symbol.circle')).fontSize(17)
+        //   Span(" 原图")
+        //   // Span(`共${this.byte()}`)
+        // }.height(49).fontColor(Color.White).onClick(() => {
+        //   this.isOriginal = !this.isOriginal
+        // }).fontColor(this.isOriginal ? '#04BE02' : 0xFFFFFF)
+
+        if (this.selectCount == 0) {
+          Text("发送")
+            .padding({
+              left: 10,
+              right: 10,
+              top: 7,
+              bottom: 7
+            })
+            .borderRadius(5)
+            .fontSize(13)
+            .fontColor('#ffa9aba9')
+            .backgroundColor('#ff303030')
+        } else {
+          Text(this.selectCount == 0 ? "发送" : `发送(${this.selectCount})`)
+            .padding({
+              left: 10,
+              right: 10,
+              top: 7,
+              bottom: 7
+            })
+            .borderRadius(5)
+            .fontSize(13)
+            .fontColor(Color.White)
+            .backgroundColor('#04BE02')
+            .onClick(() => {
+              this.photos.forEach((p, i) => {
+                if (this.list.indexOf(i) != -1) {
+                  this.selectList.push(p)
+                }
+              })
+
+              router.back(this.selectList)
+            })
+        }
       }
       .width('100%')
-      .padding({ top: 40 })
-      .position({ top: 0 })
-      .backgroundBlurStyle(BlurStyle.Thin,
-        { colorMode: ThemeColorMode.DARK, adaptiveColor: AdaptiveColor.DEFAULT, scale: 1.0 })
-
-      Stack() {
-        Text('预览')
-          .height(49)
-          .position({ left: 0, top: 0 })
-          .padding({ left: 10, right: 10 })
-          .fontColor(Color.White)
-          .textAlign(TextAlign.Center)
-
-        Text('原图').height(49).fontColor(Color.White)
-
-        Text('发送')
-          .position({ right: 0, top: 0 })
-          .padding({
-            left: 10,
-            right: 10,
-            top: 5,
-            bottom: 5
-          })
-          .borderRadius(5)
-          .fontSize(13)
-          .fontColor(Color.White)
-          .textAlign(TextAlign.Center)
-          .backgroundColor(Color.Green)
-      }
-      .width('100%')
-      .padding({ bottom: 40 })
+      .justifyContent(FlexAlign.SpaceBetween)
+      .padding({ bottom: global.bottom + 20, left: 10, right: 10 })
       .position({ bottom: 0 })
       .backgroundBlurStyle(BlurStyle.Thin,
         { colorMode: ThemeColorMode.DARK, adaptiveColor: AdaptiveColor.DEFAULT, scale: 1.0 })
@@ -157,13 +201,8 @@ struct PhotoItem {
 
   build() {
     Stack({ alignContent: Alignment.TopEnd }) {
-      Image(this.item.asset.uri).width('100%').onClick(() => {
-        router.pushNamedRoute({
-          name: 'photoManage/OpenImage', params: {
-            src: this.item.asset.uri,
-            // type: OpenImageType.uri,
-          }
-        })
+      Image(this.item.asset.uri).objectFit(ImageFit.Cover).width('100%').aspectRatio(1).onClick(() => {
+        router.push("openImage", { data: this.item.asset.uri } as OpenImageParams)
       })
       if (this.item.select) {
         Text(`${this.list.indexOf(this.index) + 1}`)
@@ -180,7 +219,7 @@ struct PhotoItem {
         SymbolSpan(this.item.select ? $r('sys.symbol.checkmark_circle_fill') : $r('sys.symbol.circle'))
       }
       .margin({ right: 5, top: 5 })
-      .fontColor(this.item.select ? 0x25BD04 : 0xFFFFFF)
+      .fontColor(this.item.select ? '#04BE02' : 0xFFFFFF)
       .fontSize(25)
       .onClick(() => {
         let isOn = !this.item.select
@@ -202,6 +241,5 @@ struct PhotoItem {
     }
     .width('100%')
     .aspectRatio(1)
-    .backgroundColor(Color.Red)
   }
 }
