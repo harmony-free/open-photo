@@ -21,6 +21,14 @@ export class ImageBase {
 
   constructor(src: ImageType) {
     this.matrix = matrix4.identity().copy();
+    this.load(src)
+  }
+
+  uri(): string {
+    return this.imageTools.getPath()
+  }
+
+  load(src: ImageType) {
     this.imageTools.read(src).then((file) => {
       this.imageSource = this.imageTools.toSource()
       this.pixelMap = this.imageSource.createPixelMapSync()

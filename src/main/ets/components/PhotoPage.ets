@@ -1,6 +1,6 @@
 import { global, NavBar, router } from '@free/global'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
-import { PhotoManage } from '../photo/PhotoManage'
+import { CameraPhoto, PhotoManage } from '../photo/PhotoManage'
 import { OpenImageParams } from './OpenImage'
 
 @Observed
@@ -54,7 +54,7 @@ export struct PhotoPage {
 
   upData() {
     this.photos = []
-    this.pm.readAll().then((list) => {
+    this.pm.readPhoto(1).then((list) => {
       list.forEach((asset) => {
         this.photos.push(new ItemModel(asset))
       })
@@ -63,6 +63,16 @@ export struct PhotoPage {
 
   aboutToDisappear(): void {
     global.setBarContentColor("#000000")
+  }
+
+  getPhotos(): string[] {
+    let list: string[] = []
+    this.photos.forEach((p, i) => {
+      if (this.list.indexOf(i) != -1) {
+        list.push(p.asset.uri)
+      }
+    })
+    return list
   }
 
   byte(): string {
@@ -86,9 +96,10 @@ export struct PhotoPage {
             .width('100%')
             .aspectRatio(1)
             .textAlign(TextAlign.Center)
-            .backgroundColor(0x999999)
+            .backgroundBlurStyle(BlurStyle.Thin,
+              { colorMode: ThemeColorMode.DARK, adaptiveColor: AdaptiveColor.DEFAULT, scale: 1.0 })
           }.onClick(() => {
-            this.pm.cameraPhoto.camera(getContext()).then(() => {
+            CameraPhoto.camera(getContext()).then(() => {
               this.upData()
             })
           })
@@ -101,6 +112,8 @@ export struct PhotoPage {
               list: this.list,
               selectCount: this.selectCount,
               max: this.query.max
+            }).onClick(() => {
+              router.push("openImage", { data: item.asset.uri } as OpenImageParams)
             })
           }
         }, (item: ItemModel) => item.text)
@@ -118,7 +131,7 @@ export struct PhotoPage {
       .backgroundColor("#ff323131")
 
       NavBar({
-        title: "相册",
+        title: `相册`,
         backColor: Color.Transparent,
         textColor: Color.White,
       })
@@ -201,9 +214,7 @@ struct PhotoItem {
 
   build() {
     Stack({ alignContent: Alignment.TopEnd }) {
-      Image(this.item.asset.uri).objectFit(ImageFit.Cover).width('100%').aspectRatio(1).onClick(() => {
-        router.push("openImage", { data: this.item.asset.uri } as OpenImageParams)
-      })
+      Image(this.item.asset.uri).objectFit(ImageFit.Cover).width('100%').aspectRatio(1)
       if (this.item.select) {
         Text(`${this.list.indexOf(this.index) + 1}`)
           .padding({ left: 5, top: 5 })

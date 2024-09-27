@@ -33,9 +33,10 @@ class PhotoBase {
   protected requestOptions: photoAccessHelper.RequestOptions = {
     deliveryMode: photoAccessHelper.DeliveryMode.HIGH_QUALITY_MODE,
   }
+  protected predicates: dataSharePredicates.DataSharePredicates = new dataSharePredicates.DataSharePredicates()
   protected options: photoAccessHelper.FetchOptions = {
     fetchColumns: [],
-    predicates: new dataSharePredicates.DataSharePredicates()
+    predicates: this.predicates
   }
   fetchResult: Promise<photoAccessHelper.FetchResult<photoAccessHelper.PhotoAsset>> =
     this.photoHelper.getAssets(this.options)
@@ -53,7 +54,6 @@ interface PhotoFace {
 }
 
 export class PhotoManage extends PhotoBase implements PhotoFace {
-  cameraPhoto: CameraPhoto = new CameraPhoto()
   photos: photoAccessHelper.PhotoAsset[] = []
   thumbnail: image.PixelMap[] = []
   count: number = 0
@@ -83,7 +83,7 @@ export class PhotoManage extends PhotoBase implements PhotoFace {
   }
 
 
-  async readAll(): Promise<photoAccessHelper.PhotoAsset[]> {
+  async readPhoto(photoType: photoAccessHelper.PhotoType | undefined = undefined): Promise<photoAccessHelper.PhotoAsset[]> {
     let req = await this.requestAssets()
     return new Promise<photoAccessHelper.PhotoAsset[]>((res, rej) => {
       if (!req) {
@@ -93,8 +93,12 @@ export class PhotoManage extends PhotoBase implements PhotoFace {
           this.count = r.getCount()
           this.isAfterLast = r.isAfterLast()
           r.getAllObjects().then((ps) => {
-            this.photos = ps
-            res(ps)
+            if (photoType != undefined) {
+              this.photos = ps.filter((p) => p.photoType == photoType)
+            } else {
+              this.photos = ps
+            }
+            res(this.photos)
             r.close()
           })
         }).catch((err: Error) => {
@@ -148,7 +152,7 @@ export class CameraPhoto {
   /**
    * 打开系统相册
    */
-  photo(options: photoAccessHelper.PhotoSelectOptions = {
+  static photo(options: photoAccessHelper.PhotoSelectOptions = {
     maxSelectNumber: 50,
     preselectedUris: []
   } as photoAccessHelper.PhotoSelectOptions): Promise<Array<string>> {
@@ -177,13 +181,14 @@ export class CameraPhoto {
   /**
    * 打开系统相机
    */
-  camera(mContext: common.Context): Promise<string> {
+  static camera(mContext: common.Context, ...types: cameraPicker.PickerMediaType[]): Promise<string> {
     return new Promise<string>((res, rej) => {
       try {
         let profile: cameraPicker.PickerProfile = {
           cameraPosition: camera.CameraPosition.CAMERA_POSITION_BACK
         };
-        cameraPicker.pick(mContext, [cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO], profile)
+        cameraPicker.pick(mContext, types ?? [cameraPicker.PickerMediaType.PHOTO, cameraPicker.PickerMediaType.VIDEO],
+          profile)
           .then((result) => {
             if (result.resultCode == 0) {
               res(result.resultUri)

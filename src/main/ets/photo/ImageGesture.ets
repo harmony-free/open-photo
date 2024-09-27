@@ -1,5 +1,13 @@
 import { ImageBase } from './ImageBase'
 import { matrix4 } from '@kit.ArkUI'
+import { Vec2 } from '@kit.ArkGraphics3D'
+
+export enum GestureDirectionType {
+  UP,
+  DOWN,
+  LEFT,
+  RIGHT
+}
 
 interface PinchGestureFace {
   onPinchStart(event: GestureEvent): void
@@ -41,6 +49,8 @@ export class ImageGesture extends ImageBase implements GestureFace {
   onPinchStart(event: GestureEvent): void {
     this.oldMatrix = this.matrix.copy()
   }
+
+  onMoveEnd: ((v: GestureDirectionType) => void) | undefined
 
   onPinchUpdate(event: GestureEvent): void {
     let cenX = event.target.area.width as number / 2
@@ -131,10 +141,16 @@ export class ImageGesture extends ImageBase implements GestureFace {
       angle: -event.angle,
       z: 1,
     })
-    // let angle = event.angle % 90
-    if (event.angle > 45) {
-      // angle = 90 - angle
-      this.angle += 90
+    if (this.angle <= 0) {
+      this.angle = 360
+    }
+    if (event.angle > 45 || event.angle < -45) {
+      if (event.angle < -45) {
+        this.angle -= 90
+      } else {
+        this.angle += 90
+      }
+
       this.isWidth = !this.isWidth
       if (this.isWidth) {
         this.aspect = this.imageSize.width / this.imageSize.height
@@ -143,7 +159,7 @@ export class ImageGesture extends ImageBase implements GestureFace {
       }
       this.pixelMap = this.copy()
     } else {
-      // angle = -angle
+
     }
     this.matrix = this.matrix.copy()
   }
@@ -160,13 +176,16 @@ export class ImageGesture extends ImageBase implements GestureFace {
     }
     let offX = this.get(12)
     let offY = this.get(13)
-    let wid = event.target.area.width as number
-    let hei = event.target.area.height as number
-    wid = wid / 2 * (this.ratio - 1) * 3.25
-    hei = hei / 2 * (this.ratio - 1) * 3.25
+    let width = (event.target.area.width as number) * 3.25
+    let height = (event.target.area.height as number) * 3.25
+    let wid = width / 2 * (this.ratio - 1)
+    let hei = height / 2 * (this.ratio - 1)
     if (offX >= wid) {
       this.set(12, wid)
       this.offsetV.x = wid
+      if (this.onMoveEnd && (offX - width / 2) >= wid) {
+        this.onMoveEnd(GestureDirectionType.LEFT)
+      }
     }
     if (offY >= hei) {
       this.set(13, hei)
@@ -175,6 +194,9 @@ export class ImageGesture extends ImageBase implements GestureFace {
     if (offX <= -wid) {
       this.set(12, -wid)
       this.offsetV.x = -wid
+      if (this.onMoveEnd && (offX + width / 2) <= -wid) {
+        this.onMoveEnd(GestureDirectionType.RIGHT)
+      }
     }
     if (offY <= -hei) {
       this.set(13, -hei)

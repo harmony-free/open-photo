@@ -3,6 +3,7 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { fileIo, ReadOptions } from '@kit.CoreFileKit';
 import { util } from '@kit.ArkTS';
 import { http } from '@kit.NetworkKit';
+import { promptAction } from '@kit.ArkUI';
 
 export type ImageType = fileIo.File | string | ArrayBuffer;
 
@@ -14,9 +15,9 @@ export class ImageTools {
   protected name: string
   protected format: string
 
-  constructor(name: string = 'temporarily.png', format: string = 'image/png') {
+  constructor(name: string = 'temporarily', format: string = 'image/png') {
     this.format = format
-    this.name = name
+    this.name = name + ".png"
     this.file = this.createFile(name)
   }
 
@@ -49,6 +50,12 @@ export class ImageTools {
 
   toSource(): image.ImageSource {
     return image.createImageSource(this.file.path)
+  }
+
+  setPixelMap(data: image.PixelMap): Promise<void> {
+    let packer = image.createImagePacker()
+    promptAction.showToast({ message: "成功" })
+    return packer.packToFile(data, this.file.fd, { format: this.format, quality: 100 })
   }
 
   toPixelMap(options: image.DecodingOptions | undefined = undefined): image.PixelMap {
@@ -148,7 +155,8 @@ export class ImageTools {
     })
   }
 
-  zip(quality: number = 98, mb: number | undefined = undefined): Promise<fileIo.File> {
+  zip(quality: number = 98, mb: number | undefined = undefined,
+    byte: number | undefined = undefined): Promise<fileIo.File> {
     let packOpts: image.PackingOption = { format: "image/jpeg", quality: quality }
     return new Promise<fileIo.File>((res, rej) => {
       let packer: image.ImagePacker = image.createImagePacker()
@@ -159,8 +167,14 @@ export class ImageTools {
         } else {
           console.log(data.byteLength.toString())
           if (mb != undefined && data.byteLength >= 1024 * 1024 * mb) {
-            let file = await this.zip(quality * 0.9, mb)
-            res(file)
+            if (byte != undefined && byte <= data.byteLength) {
+              this.clear()
+              this.setBuffer(data)
+              res(this.file)
+            } else {
+              let file = await this.zip(quality * 0.9, mb, data.byteLength)
+              res(file)
+            }
           } else {
             this.clear()
             this.setBuffer(data)
