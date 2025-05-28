@@ -6,18 +6,18 @@
 
 #### 软件架构
 
-| 主要功能 | 模块     | 介绍                                 |
-|------|--------|------------------------------------|
-| 打开相机 | alert  | `Dialog.alert("alert")`            | 
-| 打开相册 | open   | `Dialog.open({data:"open"})`       | 
-| 打开图片 | sheet  | `Dialog.sheet({data:['sheet']})`   | 
-| 平移   | picker | `Dialog.picker({data:['picker']})` | 
-| 放大   | tel    | `Dialog.tel("168********")`        | 
-| 缩小   | custom | `Dialog.custom(wrap, params)`      | 
-| 双指旋转 | custom | `Dialog.custom(wrap, params)`      | 
-| 双击放大 | custom | `Dialog.custom(wrap, params)`      | 
-| 翻转   | custom | `Dialog.custom(wrap, params)`      | 
-| 剪切   | custom | `Dialog.custom(wrap, params)`      | 
+| 主要功能 | 模块 | 介绍                                     |
+|------|----|----------------------------------------|
+| 图片组件 | 完成 | `ImageView`                            | 
+| 打开相册 | 完成 | `PhotoPage`                            | 
+| 打开图片 | 完成 | `OpenImage`                            | 
+| 平移   | 完成 | `LongPressGesture`                     | 
+| 放大   | 完成 | `TapGesture({ count: 2, fingers: 1 })` | 
+| 缩小   | 完成 | `TapGesture({ count: 2, fingers: 1 })` | 
+| 双指旋转 | 完成 | `RotationGesture`                      | 
+| 双击放大 | 完成 | `TapGesture({ count: 2, fingers: 1 })` | 
+| 翻转   | 完成 | `RotationGesture`                      | 
+| 剪切   | 完成 | `Dialog.custom(wrap, params)`          | 
 
 #### 安装教程
 
@@ -42,9 +42,18 @@ router.requestBuilder("openImage", wrapBuilder(OpenImageBuilder))
 // 跳转页面 navgation
 router.push('openImage', new Object({ src: "" }))
 
-// 跳转页面 router
-router.push('openImage', new Object({ src: "" }))
+// 跳转页面 router 
+// @Entry({ routeName: 'photoManage/OpenImage' })
+// router.push('openImage', new Object({ src: "" }))
+router.pushNamedRoute({name:"photoManage/OpenImage"})
 
+```
+
+2、直接使用组件
+```
+ImageView({
+        src: imgSrc,
+      }).width("100%")
 ```
 
 #### 参与贡献

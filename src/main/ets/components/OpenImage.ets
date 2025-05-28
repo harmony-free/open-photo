@@ -14,7 +14,7 @@ export function OpenImageBuilder(p: object) {
   }.hideTitleBar(true)
 }
 
-@Entry
+@Entry({ routeName: 'photoManage/OpenImage' })
 @Component
 export struct OpenImage {
   @State src: string =
