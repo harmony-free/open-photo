@@ -8,14 +8,14 @@
       "2in1"
     ],
     "requestPermissions": [
-      {
-        "name": "ohos.permission.READ_IMAGEVIDEO",
-        "reason": "$string:READ_IMAGEVIDEO"
-      },
-      {
-        "name": "ohos.permission.WRITE_IMAGEVIDEO",
-        "reason": "$string:WRITE_IMAGEVIDEO"
-      },
+//      {
+//        "name": "ohos.permission.READ_IMAGEVIDEO",
+//        "reason": "$string:READ_IMAGEVIDEO"
+//      },
+//      {
+//        "name": "ohos.permission.WRITE_IMAGEVIDEO",
+//        "reason": "$string:WRITE_IMAGEVIDEO"
+//      },
       {
         "name": "ohos.permission.INTERNET"
       }
